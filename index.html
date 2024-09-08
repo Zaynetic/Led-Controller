@@ -25,7 +25,13 @@
 
   <button onclick="connectToArduino()">Connect to Arduino</button>
 
+  <!-- Include Socket.IO library -->
+  <script src="http://192.168.100.25:3000/socket.io/socket.io.js"></script>
+
   <script>
+    // Initialize the Socket.IO connection
+    var socket = io();
+
     let port;
 
     async function connectToArduino() {
@@ -41,6 +47,7 @@
 
     async function sendCommand(led, value) {
       if (port) {
+        // Send the command to the Arduino over serial
         const writer = port.writable.getWriter();
         let command = `${led}:${value}\n`;
         const data = new TextEncoder().encode(command);
@@ -49,7 +56,20 @@
       } else {
         console.log("Port is not connected.");
       }
+
+      // Emit the command via Socket.IO to the server
+      socket.emit('led-command', { led, value });
     }
+
+    // Optionally listen for messages from the server
+    socket.on('controllers-updated', function(data) {
+      let ledname = data.led.toLowerCase();
+      document.getElementById(ledname).value = parseInt(data.value);
+    });
+
+    socket.on('server-message', function(data) {
+      console.log('Message from server:', data);
+    });
   </script>
 </body>
 </html>

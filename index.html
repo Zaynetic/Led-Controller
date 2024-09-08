@@ -10,23 +10,23 @@
 
   <div>
     <label for="led1">LED 1 Intensity (0-255):</label>
-    <input type="range" id="led1" min="0" max="255" value="0" oninput="sendCommand('LED1', this.value)">
+    <input type="range" id="led1" min="0" max="255" value="0" oninput="initCommand('LED1', this.value)">
   </div>
   
   <div>
     <label for="led2">LED 2 Intensity (0-255):</label>
-    <input type="range" id="led2" min="0" max="255" value="0" oninput="sendCommand('LED2', this.value)">
+    <input type="range" id="led2" min="0" max="255" value="0" oninput="initCommand('LED2', this.value)">
   </div>
 
   <div>
     <label for="led3">LED 3 Intensity (0-255):</label>
-    <input type="range" id="led3" min="0" max="255" value="0" oninput="sendCommand('LED3', this.value)">
+    <input type="range" id="led3" min="0" max="255" value="0" oninput="initCommand('LED3', this.value)">
   </div>
 
   <button onclick="connectToArduino()">Connect to Arduino</button>
 
   <!-- Include Socket.IO library -->
-  <script src="http://13.60.86.66:3000/socket.io/socket.io.js"></script>
+  <script src="https://led-controller-kappa.vercel.app/socket.io/socket.io.js"></script>
 
   <script>
     // Initialize the Socket.IO connection
@@ -45,6 +45,11 @@
       }
     }
 
+    async function initCommand(led, value){
+      sendCommand(led, value)
+      socket.emit('led-command', { led, value });
+    }
+
     async function sendCommand(led, value) {
       if (port) {
         // Send the command to the Arduino over serial
@@ -56,15 +61,13 @@
       } else {
         console.log("Port is not connected.");
       }
-
-      // Emit the command via Socket.IO to the server
-      socket.emit('led-command', { led, value });
     }
 
     // Optionally listen for messages from the server
     socket.on('controllers-updated', function(data) {
       let ledname = data.led.toLowerCase();
       document.getElementById(ledname).value = parseInt(data.value);
+      sendCommand(data.led, data.value)
     });
 
     socket.on('server-message', function(data) {
